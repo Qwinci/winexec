@@ -1,0 +1,3 @@
+This project uses the following parts of the Musl libc which are licensed under their respective licenses:
+- src/printlib/vfprintf_musl.c (in Musl tree src/stdio/vfprintf.c)
+- src/printlib/vfwprintf_musl.c (in Musl tree src/stdio/vfwprintf.c)
