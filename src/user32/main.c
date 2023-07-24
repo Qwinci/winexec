@@ -5,7 +5,23 @@
 #include "winnt.h"
 #include "utils.h"
 
-STUB(CreateWindowExW)
+WINAPI HWND CreateWindowExW(
+		DWORD dw_ex_style,
+		LPCWSTR lp_class_name,
+		LPCWSTR lp_window_name,
+		DWORD dw_style,
+		int x,
+		int y,
+		int n_width,
+		int n_height,
+		HWND hwnd_parent,
+		HMENU h_menu,
+		HINSTANCE h_instance,
+		LPVOID lp_param) {
+	TODO;
+	return INVALID_HANDLE_VALUE;
+}
+
 STUB(TranslateMessage)
 STUB(CharLowerBuffW)
 STUB(CallWindowProcW)
@@ -171,7 +187,18 @@ WINAPIV int wsprintfW(LPWSTR str, LPCWSTR fmt, ...) {
 }
 
 STUB(ScreenToClient)
-STUB(GetWindowRect)
+
+typedef struct {
+	LONG left;
+	LONG top;
+	LONG right;
+	LONG bottom;
+} RECT, *LPRECT;
+
+WINAPI BOOL GetWindowRect(HWND hwnd, LPRECT lp_rect) {
+	TODO;
+	return 1;
+}
 
 WINAPI BOOL SetDlgItemTextW(HWND h_dlg, int n_id_dlg_item, LPCWSTR lp_string) {
 	String utf8 = utf16_to_str(lp_string);
@@ -185,7 +212,7 @@ STUB(GetDlgItemTextW)
 typedef struct {
 	LONG x;
 	LONG y;
-} POINT;
+} POINT, *LPPOINT;
 
 typedef struct {
 	UINT cb_size;
@@ -268,12 +295,15 @@ WINAPI int ReleaseDC(HWND h_wnd, HDC hdc) {
 	return 1;
 }
 
-WINAPI BOOL EnableWindow(HWND h_wnd, BOOL b_enable) {
+WINAPI BOOL EnableWindow(HWND hwnd, BOOL b_enable) {
 	TODO;
 	return 1;
 }
 
-STUB(InvalidateRect)
+WINAPI BOOL InvalidateRect(HWND hwnd, const RECT* lp_rect, BOOL b_erase) {
+	TODO;
+	return 1;
+}
 
 WINAPI LRESULT SendMessageW(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
 	TODO;
@@ -282,13 +312,6 @@ WINAPI LRESULT SendMessageW(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 
 STUB(DefWindowProcW)
 STUB(BeginPaint)
-
-typedef struct {
-	LONG left;
-	LONG top;
-	LONG right;
-	LONG bottom;
-} RECT, *LPRECT;
 
 WINAPI BOOL GetClientRect(HWND hwnd, LPRECT lp_rect) {
 	TODO;
@@ -397,27 +420,31 @@ STUB(GetAsyncKeyState)
 STUB(IsDlgButtonChecked)
 
 WINAPI int wvsprintfW(LPWSTR out, LPCWSTR fmt, __ms_va_list ap) {
-	String fmt_utf8 = utf16_to_str(fmt);
 	TODO;
-	int res = fprintf(stderr, "%s\n", fmt_utf8.str);
-	if (strstr(fmt_utf8.str, "%s")) {
-		LPCWSTR str = va_arg(ap, LPCWSTR);
-		String str_utf8 = utf16_to_str(str);
-		fprintf(stderr, "'%s'\n", str_utf8.str);
-		string_free(str_utf8);
-	}
-
-	string_free(fmt_utf8);
-	return res;
+	return 0;
 }
 
 STUB(GetPropW)
 STUB(DrawFocusRect)
-STUB(MapDialogRect)
-STUB(SetPropW)
+
+WINAPI BOOL MapDialogRect(HWND h_dlg, LPRECT lp_rect) {
+	TODO;
+	return 1;
+}
+
+WINAPI BOOL SetPropW(HWND hwnd, LPCWSTR lp_string, HANDLE h_data) {
+	TODO;
+	return 1;
+}
+
 STUB(KillTimer)
 STUB(GetMessageW)
 STUB(IsDialogMessageW)
-STUB(MapWindowPoints)
+
+WINAPI int MapWindowPoints(HWND hwnd_from, HWND hwnd_to, LPPOINT lp_points, UINT c_points) {
+	TODO;
+	return 0;
+}
+
 STUB(RemovePropW)
 STUB(GetWindowTextW)

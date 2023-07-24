@@ -87,12 +87,14 @@ static inline void string_strip_postfix(String* str, const char* postfix) {
 	}
 }
 
-static inline void string_strip_prefix(String* str, const char* prefix) {
+static inline bool string_strip_prefix(String* str, const char* prefix) {
 	usize len = strlen(prefix);
 	if (string_starts_with(*str, prefix)) {
 		memmove(str->str, str->str + len, str->len - len + 1);
 		str->len -= len;
+		return true;
 	}
+	return false;
 }
 
 static inline void string_replace_all_c(String* str, char replace, char with) {

@@ -34,7 +34,6 @@ static String utf16_to_str_with_len(LPCWSTR str, usize len) {
 
 static void str_to_utf16(String str, LPWSTR res, size_t len) {
 	const char* s = str.str;
-	usize total_written = 0;
 	while (true) {
 		if (len == 1) {
 			*res = 0;
@@ -50,7 +49,6 @@ static void str_to_utf16(String str, LPWSTR res, size_t len) {
 		if (cp == 0) {
 			break;
 		}
-		total_written += written;
 		if (written == 0) {
 			*res = 0;
 			return;

@@ -75,6 +75,8 @@ Status process_imports(PeFile* file) { // NOLINT(misc-no-recursion)
 
 		if (strcasecmp(library_name, "msvcrt.dll") == 0) {
 			prefix = "win_";
+			void (*set_args)(int argc, char** argv, char** envp) = (void (*)(int, char**, char**)) dlsym(native_lib, "set_args");
+			set_args(LOADERLIB_ARGC, (char**) LOADERLIB_ARGV, (char**) LOADERLIB_ENVP);
 		}
 		else if (strcasecmp(library_name, "kernel32.dll") == 0) {
 			*(const char**) dlsym(native_lib, "EXE_PATH") = file->exe_path;

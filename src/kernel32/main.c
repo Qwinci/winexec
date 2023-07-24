@@ -17,6 +17,7 @@
 #define __USE_XOPEN_EXTENDED
 #include <ftw.h>
 #include <threads.h>
+#include <glob.h>
 
 STUB(DeleteCriticalSection)
 STUB(EnterCriticalSection)
@@ -39,24 +40,10 @@ WINAPI DWORD GetCurrentThreadId() {
 #define ERROR_ALREADY_EXISTS 0xB7
 #define ERROR_PATH_NOT_FOUND 0x3
 
-static DWORD errno_to_win() {
-	int err = errno;
-	if (err == ENOENT) {
-		return ERROR_PATH_NOT_FOUND;
-	}
-	else if (err == EEXIST) {
-		return ERROR_ALREADY_EXISTS;
-	}
-	else {
-		perror("");
-		TODO;
-	}
-
-	return 0;
-}
+static thread_local DWORD error = 0;
 
 WINAPI DWORD GetLastError() {
-	return errno_to_win();
+	return error;
 }
 
 STUB(GetStartupInfoA)
@@ -136,7 +123,18 @@ WINAPI void ExitProcess(UINT u_exit_code) {
 	exit((int) u_exit_code);
 }
 
-STUB(HeapAlloc)
+#define HEAP_ZERO_MEMORY 0x8
+
+WINAPI LPVOID HeapAlloc(HANDLE h_heap, DWORD dw_flags, SIZE_T dw_bytes) {
+	TODO;
+	if (dw_flags & HEAP_ZERO_MEMORY) {
+		return calloc(1, dw_bytes);
+	}
+	else {
+		return malloc(dw_bytes);
+	}
+}
+
 STUB(GetCPInfoExW)
 STUB(RtlUnwind)
 STUB(GetCPInfo)
@@ -353,7 +351,7 @@ WINAPI DWORD GetFileSize(HANDLE h_file, LPDWORD lp_file_size_high) {
 		return 0;
 	}
 
-	if ((uint32_t) s.st_size > UINT32_MAX) {
+	if (s.st_size > UINT32_MAX) {
 		*lp_file_size_high = s.st_size >> 32;
 	}
 	return (DWORD) s.st_size;
@@ -509,25 +507,33 @@ typedef struct {
 	WORD w_finder_flags;
 } WIN32_FIND_DATAW, *LPWIN32_FIND_DATAW;
 
-#define TMP_HANDLE (HANDLE) (-2)
+typedef struct {
+	glob_t buf;
+	size_t index;
+	bool is_c;
+} FindFileData;
 
 WINAPI HANDLE FindFirstFileW(LPCWSTR lp_filename, LPWIN32_FIND_DATAW lp_find_file_data) {
+	FindFileData* data = calloc(1, sizeof(FindFileData));
+	if (!data) {
+		return INVALID_HANDLE_VALUE;
+	}
+	data->index = 1;
+
 	String name = utf16_to_str(lp_filename);
-	string_strip_prefix(&name, "C:\\");
+	bool is_c = string_strip_prefix(&name, "C:\\");
 	string_replace_all_c(&name, '\\', '/');
 
-	for (usize i = 0; i < name.len; ++i) {
-		if (name.str[i] == '*') {
-			TODO;
-			fprintf(stderr, "wildcard chars are not supported ^\n");
-			break;
-		}
+	data->is_c = is_c;
+
+	if (glob(name.str, 0, NULL, &data->buf) != 0) {
+		globfree(&data->buf);
+		free(data);
+		return INVALID_HANDLE_VALUE;
 	}
 
-	TODO;
-
 	struct stat s;
-	if (stat(name.str, &s) == 0) {
+	if (stat(data->buf.gl_pathv[0], &s) == 0) {
 		DWORD attribs = 0;
 		string_free(name);
 
@@ -546,16 +552,19 @@ WINAPI HANDLE FindFirstFileW(LPCWSTR lp_filename, LPWIN32_FIND_DATAW lp_find_fil
 		unix_to_filetime(&lp_find_file_data->ft_creation_time, &s.st_ctim);
 		unix_to_filetime(&lp_find_file_data->ft_last_access_time, &s.st_atim);
 		unix_to_filetime(&lp_find_file_data->ft_last_write_time, &s.st_mtim);
-		usize len = lstrlenW(lp_filename);
-		usize copied = len < 259 ? len + 1 : 259;
-		memcpy(&lp_find_file_data->c_filename, lp_filename, len * sizeof(WCHAR));
-		lp_find_file_data->c_filename[copied] = 0;
+		String tmp = string_new(data->buf.gl_pathv[0], strlen(data->buf.gl_pathv[0]));
+		if (is_c) {
+			string_prepend(&tmp, "C:\\", 3);
+		}
+		string_replace_all_c(&tmp, '/', '\\');
+		str_to_utf16(tmp, lp_find_file_data->c_filename, 260);
+		string_free(tmp);
 
-		return TMP_HANDLE;
+		return data;
 	}
 
 	string_free(name);
-	return INVALID_HANDLE_VALUE;
+	return data;
 }
 
 WINAPI LANGID GetUserDefaultUILanguage() {
@@ -564,7 +573,12 @@ WINAPI LANGID GetUserDefaultUILanguage() {
 }
 
 STUB(SetEndOfFile)
-STUB(HeapFree)
+
+WINAPI BOOL HeapFree(HANDLE h_heap, DWORD dw_flags, LPVOID lp_mem) {
+	TODO;
+	free(lp_mem);
+	return 1;
+}
 
 static usize wstrlen(LPCWSTR str) {
 	usize len = 0;
@@ -611,9 +625,8 @@ WINAPI int WideCharToMultiByte(UINT code_page,
 }
 
 WINAPI BOOL FindClose(HANDLE h_find_file) {
-	if (h_find_file == TMP_HANDLE) {
-		return 1;
-	}
+	globfree(&((FindFileData*) h_find_file)->buf);
+	free(h_find_file);
 	return 0;
 }
 
@@ -962,7 +975,43 @@ WINAPI LPWSTR lstrcpynW(LPWSTR lp_string1, LPCWSTR lp_string2, int i_max_length)
 	return orig;
 }
 
-STUB(FindNextFileW)
+WINAPI BOOL FindNextFileW(HANDLE h_find_file, LPWIN32_FIND_DATAW lp_find_file_data) {
+	FindFileData* data = (FindFileData*) h_find_file;
+
+	struct stat s;
+	if (data->index < data->buf.gl_pathc && stat(data->buf.gl_pathv[data->index], &s) == 0) {
+		DWORD attribs = 0;
+
+		if (S_ISDIR(s.st_mode)) {
+			attribs |= FILE_ATTRIBUTE_DIRECTORY;
+		}
+		else {
+			attribs = FILE_ATTRIBUTE_NORMAL;
+		}
+
+		*lp_find_file_data = (WIN32_FIND_DATAW) {
+				.dw_file_attribs = attribs,
+				.n_file_size_high = s.st_size >> 32,
+				.n_file_size_low = (DWORD) s.st_size
+		};
+		unix_to_filetime(&lp_find_file_data->ft_creation_time, &s.st_ctim);
+		unix_to_filetime(&lp_find_file_data->ft_last_access_time, &s.st_atim);
+		unix_to_filetime(&lp_find_file_data->ft_last_write_time, &s.st_mtim);
+		String tmp = string_new(data->buf.gl_pathv[data->index], strlen(data->buf.gl_pathv[data->index]));
+		if (data->is_c) {
+			string_prepend(&tmp, "C:\\", 3);
+		}
+		string_replace_all_c(&tmp, '/', '\\');
+		str_to_utf16(tmp, lp_find_file_data->c_filename, 260);
+		string_free(tmp);
+
+		data->index += 1;
+		return 1;
+	}
+
+	data->index += 1;
+	return 0;
+}
 
 WINAPI int MulDiv(int n_number, int n_numerator, int n_denominator) {
 	TODO;
@@ -993,8 +1042,29 @@ STUB(WriteConsoleW)
 STUB(GetConsoleMode)
 STUB(GlobalSize)
 STUB(GetCurrentDirectoryW)
-STUB(GetProcessHeap)
-STUB(HeapReAlloc)
+
+static void* process_heap = NULL;
+
+WINAPI HANDLE GetProcessHeap() {
+	TODO;
+	return &process_heap;
+}
+
+#define HEAP_REALLOC_IN_PLACE_ONLY 0x10
+
+WINAPI LPVOID HeapReAlloc(HANDLE h_heap, DWORD dw_flags, LPVOID lp_mem, SIZE_T dw_bytes) {
+	TODO;
+	if (dw_flags & HEAP_REALLOC_IN_PLACE_ONLY) {
+		return NULL;
+	}
+
+	void* mem;
+	if (dw_flags & HEAP_ZERO_MEMORY) {
+		fprintf(stderr, "heap zeroing in HeapReAlloc\n");
+	}
+	mem = realloc(lp_mem, dw_bytes);
+	return mem;
+}
 
 WINAPI HANDLE CreateMutexW(LPSECURITY_ATTRIBUTES lp_mutex_attribs, BOOL b_initial_owner, LPCWSTR lp_name) {
 	mtx_t* mutex = (mtx_t*) malloc(sizeof(mtx_t));
