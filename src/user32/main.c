@@ -238,7 +238,7 @@ typedef struct {
 	DWORD dw_language_id;
 } MSGBOXPARAMSW;
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 WINAPI int MessageBoxIndirectW(const MSGBOXPARAMSW* lp_mbp) {
 	LPCWSTR caption = lp_mbp->lpsz_caption;

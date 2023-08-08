@@ -1,5 +1,6 @@
 #include <sys/mman.h>
 #include <string.h>
+#include <stdio.h>
 #include "mapper.h"
 #include "headers.h"
 
@@ -13,13 +14,12 @@ static inline Status map_pe64(const void* src, const PeHeader64* hdr, PeFile* de
 				(void*) hdr->optional_header.image_base,
 				image_size,
 				PROT_WRITE,
-				MAP_PRIVATE | MAP_ANONYMOUS,
+				MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS,
 				-1,
 				0);
-		if (!buffer) return STATUS_NO_MEM;
-		else if (buffer != (void*) hdr->optional_header.image_base) {
-			munmap(buffer, image_size);
-			return STATUS_NO_MEM;
+		if (buffer == MAP_FAILED) {
+			fprintf(stderr, "error: failed to allocate %p bytes at addr %p\n", (void*) image_size, (void*) hdr->optional_header.image_base);
+			*(volatile int*) 0 = 0;
 		}
 	}
 	else {
@@ -32,7 +32,11 @@ static inline Status map_pe64(const void* src, const PeHeader64* hdr, PeFile* de
 				0);
 	}
 
-	if (!buffer) return STATUS_NO_MEM;
+	if (buffer == MAP_FAILED) {
+		perror("failed to mmap memory");
+		return STATUS_NO_MEM;
+	}
+
 	dest->base = buffer;
 
 	if (hdr->optional_header.size_of_headers == 0 ||

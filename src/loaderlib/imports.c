@@ -1,22 +1,15 @@
 #include "imports.h"
 #include "headers.h"
-#include "relocs.h"
 #include "exports.h"
-#include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
 #include <stdio.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
-#include <ctype.h>
-#include <unistd.h>
 #include "str.h"
 #include "lib/common.h"
 #include "loaderlib.h"
-#include "tls.h"
-#include "entry.h"
 #include "loader.h"
+#include <string.h>
 
 typedef struct {
 	uint32_t import_lookup_table_rva;

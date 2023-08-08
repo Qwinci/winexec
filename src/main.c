@@ -35,10 +35,22 @@ int main(int argc, const char** argv, const char** envp) {
 	params->CommandLine.Length = 0;
 	params->CommandLine.MaximumLength = 0;
 
+#ifdef __linux__
+
 #ifdef CONFIG_64BIT
 	syscall(SYS_arch_prctl, ARCH_SET_GS, tib);
 #else
 	syscall(SYS_arch_prctl, ARCH_SET_FS, tib);
+#endif
+
+#elif defined(__managarm__)
+
+#ifdef CONFIG_64BIT
+	helWriteGsBase(tib);
+#else
+	helWriteFsbase(tib);
+#endif
+
 #endif
 
 	loaderlib_add_import_path("./");

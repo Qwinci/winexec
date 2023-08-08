@@ -163,6 +163,12 @@ static const char sizeprefix['y'-'a'] = {
 	['p'-'a']='j'
 };
 
+static size_t wcsnlen_custom(const wchar_t* str, size_t size) {
+	size_t len = 0;
+	for (; size && *str; ++str, --size) ++len;
+	return len;
+}
+
 static int wprintf_core(FILE *f, const wchar_t *fmt, __ms_va_list *ap, union arg *nl_arg, int *nl_type)
 {
 	wchar_t *a, *z, *s=(wchar_t *)fmt;
@@ -291,7 +297,7 @@ static int wprintf_core(FILE *f, const wchar_t *fmt, __ms_va_list *ap, union arg
 				continue;
 			case 'S':
 				a = arg.p;
-				z = a + wcsnlen(a, p<0 ? INT_MAX : p);
+				z = a + wcsnlen_custom(a, p<0 ? INT_MAX : p);
 				if (p<0 && *z) goto overflow;
 				p = z-a;
 				if (w<p) w=p;
@@ -366,7 +372,7 @@ int vfwprintf_musl(FILE *restrict f, const wchar_t *restrict fmt, __ms_va_list a
 	int ret;
 
 	/* the copy allows passing __ms_va_list* even if __ms_va_list is an array */
-	va_copy(ap2, ap);
+	__ms_va_copy(ap2, ap);
 	if (wprintf_core(0, fmt, &ap2, nl_arg, nl_type) < 0) {
 		__ms_va_end(ap2);
 		return -1;

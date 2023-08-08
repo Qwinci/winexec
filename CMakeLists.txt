@@ -11,20 +11,21 @@ set(MAIN_SRC src/main.c)
 add_executable(winexec ${MAIN_SRC})
 add_executable(winexec32 ${MAIN_SRC})
 
-target_compile_options(winexec32 PRIVATE -m32 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function)
-target_compile_options(winexec PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-unused-function)
+target_compile_options(winexec32 PRIVATE -m32 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -fPIC)
+target_compile_options(winexec PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -fPIC)
 
-target_link_options(winexec32 PRIVATE -m32)
+target_link_options(winexec32 PRIVATE -m32 -pie)
+target_link_options(winexec PRIVATE -pie)
 
 target_link_libraries(winexec PRIVATE loaderlib)
+set_target_properties(winexec PROPERTIES LINK_FLAGS "-Wl,-rpath,/root/winexec/")
 target_link_libraries(winexec32 PRIVATE loaderlib_w32)
+set_target_properties(winexec32 PROPERTIES LINK_FLAGS "-Wl,-rpath,/root/winexec/")
 
 target_compile_definitions(winexec PRIVATE CONFIG_64BIT)
 
 target_include_directories(winexec PRIVATE src)
 target_include_directories(winexec32 PRIVATE src)
-
-add_dependencies(winexec winexec32)
 
 macro(Library name)
     add_library(${name} SHARED main.c ${ARGN})

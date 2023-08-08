@@ -11,6 +11,8 @@
 #include "loaderlib.h"
 #include "loader.h"
 #include "common.h"
+#include <string.h>
+#include <unistd.h>
 
 LoadedLib* LOADERLIB_LOADED_LIBS = NULL;
 usize LOADERLIB_LOADED_LIBS_LEN = 0;
@@ -100,9 +102,17 @@ Status loaderlib_execute(PeFile* out,
 		return STATUS_NOT_FOUND;
 	}
 	struct stat s;
-	fstat(fd, &s);
+	if (fstat(fd, &s) != 0) {
+		if (stat(name, &s) != 0) {
+			close(fd);
+			return STATUS_NOT_FOUND;
+		}
+	}
+
+	*(volatile int*) 0 = 0;
 	char* file = (char*) mmap(NULL, s.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	if (!file) {
+		fprintf(stderr, "failed to mmap file %s\n", name);
 		return STATUS_NO_MEM;
 	}
 

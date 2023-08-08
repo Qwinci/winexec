@@ -2,6 +2,9 @@
 #include "windef.h"
 #include "types.h"
 #include <stdio.h>
+#if __STDC_VERSION__ < 202000L || (!defined(__clang__) && __GNUC__ < 13)
+#include <stdbool.h>
+#endif
 
 #ifdef __clang__
 #pragma clang diagnostic push

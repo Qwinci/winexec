@@ -3,14 +3,7 @@
 #include "headers.h"
 #include "winternl.h"
 #include "entry.h"
-
-#ifdef __linux__
-#include <sys/syscall.h>
-#include <asm/prctl.h>
-#include <unistd.h>
 #include <sys/mman.h>
-
-#endif
 
 typedef struct {
 	usize raw_data_start_va;
@@ -40,14 +33,14 @@ void allocate_tls(PeFile* file) {
 	void* start = (void*) tls->raw_data_start_va;
 	void* end = (void*) tls->raw_data_end_va;
 
-	TIB* tib;
-#ifdef __linux__
-	syscall(SYS_arch_prctl, ARCH_GET_GS, &tib);
+	TEB* teb;
+#ifdef CONFIG_64BIT
+	__asm__("mov %%gs:0x30, %0" : "=r"(teb));
+#else
+	__asm__("mov %%fs:0x30, %0" : "=r"(teb));
 #endif
 
 	assert(TLS_INDEX < 64);
-
-	TEB* teb = tib->teb;
 
 	usize size = tls->raw_data_end_va - tls->raw_data_start_va + tls->size_of_zero_fill;
 

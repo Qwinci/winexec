@@ -18,6 +18,9 @@
 #include <ftw.h>
 #include <threads.h>
 #include <glob.h>
+#include <string.h>
+
+#define thread_local _Thread_local
 
 STUB(DeleteCriticalSection)
 STUB(EnterCriticalSection)
@@ -34,7 +37,8 @@ WINAPI DWORD GetCurrentProcessId() {
 }
 
 WINAPI DWORD GetCurrentThreadId() {
-	return pthread_self();
+	// todo make this better
+	return (DWORD) pthread_self();
 }
 
 #define ERROR_ALREADY_EXISTS 0xB7

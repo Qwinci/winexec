@@ -35,8 +35,8 @@ static inline const char* status_to_str(Status status) {
 			return "STATUS_LOAD_FAILED";
 		case STATUS_IMPORT_NOT_FOUND:
 			return "STATUS_IMPORT_NOT_FOUND";
-			break;
 	}
+	return NULL;
 }
 
 typedef struct {

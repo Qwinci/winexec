@@ -117,7 +117,11 @@ Status load_dll_library(LoadedLib** res, const char* name, usize name_len) {
 	}
 
 	struct stat s;
-	fstat(fd, &s);
+	if (fstat(fd, &s) != 0) {
+		if (stat(str.str, &s) != 0) {
+			close(fd);
+		}
+	}
 	char* dll_file = (char*) mmap(NULL, s.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	if (!dll_file) {
 		string_free(str);

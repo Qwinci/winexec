@@ -1,9 +1,10 @@
 set(SRC vfprintf_musl.c vfwprintf_musl.c)
 
-add_library(printlib SHARED ${SRC})
-add_library(printlib_w32 SHARED ${SRC})
+add_library(printlib STATIC ${SRC})
+add_library(printlib_w32 STATIC ${SRC})
 target_compile_definitions(printlib PRIVATE CONFIG_64BIT)
-target_compile_options(printlib_w32 PRIVATE -m32)
+target_compile_options(printlib PRIVATE -fPIC)
+target_compile_options(printlib_w32 PRIVATE -m32 -fPIC)
 target_link_options(printlib_w32 PRIVATE -m32)
 target_include_directories(printlib PRIVATE ${PROJECT_SOURCE_DIR}/include/lib)
 target_include_directories(printlib_w32 PRIVATE ${PROJECT_SOURCE_DIR}/include/lib)
