@@ -147,7 +147,19 @@ WINAPI size_t win_strlen(const char* str) {
 	return strlen(str);
 }
 
-STUB(win_strncmp)
+WINAPI int win_strncmp(const char* str1, const char* str2, size_t count) {
+	for (; count; --count, ++str1, ++str2) {
+		int res = *str1 - *str2;
+		if (res != 0) {
+			return res;
+		}
+		else if (!*str1) {
+			return 0;
+		}
+	}
+	return 0;
+}
+
 STUB(win_vfprintf)
 STUB(win_iswspace)
 STUB(win__msize)

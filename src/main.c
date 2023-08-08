@@ -1,20 +1,16 @@
 #include "winternl.h"
+#ifdef __linux__
 #include <asm/prctl.h>
 #include <sys/syscall.h>
+#endif
+#ifdef __managarm__
+#include <hel.h>
+#include <hel-syscalls.h>
+#endif
 #include <unistd.h>
 #include <stdlib.h>
 #include "loaderlib/loaderlib.h"
 #include <stdio.h>
-
-typedef struct {
-	void* seh_frame;
-	void* stack_base;
-	void* stack_limit;
-	void* subsystemTib;
-	void* fiber_data;
-	void* arbitary_data_slot;
-	PTEB teb;
-} TIB;
 
 int main(int argc, const char** argv, const char** envp) {
 	const char* name;
@@ -22,7 +18,7 @@ int main(int argc, const char** argv, const char** envp) {
 		name = argv[1];
 	}
 	else {
-		name = "../SteamSetup.exe";
+		name = "../size64.exe";
 	}
 
 	TIB* tib = calloc(1, sizeof(TIB));

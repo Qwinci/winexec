@@ -71,7 +71,10 @@ WINAPI DWORD GetTickCount() {
 	return info.uptime * 1000;
 }
 
-STUB(InitializeCriticalSection)
+WINAPI void InitializeCriticalSection(LPCRITICAL_SECTION lp_critical_section) {
+	TODO;
+}
+
 STUB(LeaveCriticalSection)
 
 WINAPI BOOL QueryPerformanceCounter(LARGE_INTEGER* lpPerformanceCount) {

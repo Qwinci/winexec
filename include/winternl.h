@@ -54,3 +54,13 @@ typedef struct {
 	PVOID Reserved6[4];
 	PVOID TlsExpansionSlots;
 } TEB, *PTEB;
+
+typedef struct TIB {
+	void* seh_frame;
+	void* stack_base;
+	void* stack_limit;
+	void* subsystemTib;
+	void* fiber_data;
+	void* arbitary_data_slot;
+	PTEB teb;
+} TIB;

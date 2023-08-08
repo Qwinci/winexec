@@ -110,12 +110,12 @@ Status loaderlib_execute(PeFile* out,
 	out->exe_path = name;
 	if (status == STATUS_SUCCESS) {
 		apply_relocations(out);
-		allocate_tls(out);
 		status = process_imports(out);
 		if (status != STATUS_SUCCESS) {
 			return STATUS_IMPORT_NOT_FOUND;
 		}
 
+		allocate_tls(out);
 		invoke_entry(out, DLL_PROCESS_ATTACH);
 		return STATUS_SUCCESS;
 	}
